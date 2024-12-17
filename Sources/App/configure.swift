@@ -7,16 +7,29 @@ import Vapor
 public func configure(_ app: Application) async throws {
     // uncomment to serve files from /Public folder
     // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+    
+    // 设置请求体大小限制
+    app.routes.defaultMaxBodySize = "10mb"
+
+    // 设置文件上传路径
+    app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+
+    var tls = TLSConfiguration.makeClientConfiguration()
+    tls.certificateVerification = .none
 
     app.databases.use(DatabaseConfigurationFactory.mysql(
-        hostname: Environment.get("DATABASE_HOST") ?? "localhost",
-        port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? MySQLConfiguration.ianaPortNumber,
-        username: Environment.get("DATABASE_USERNAME") ?? "vapor_username",
-        password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password",
-        database: Environment.get("DATABASE_NAME") ?? "vapor_database"
+        hostname: "localhost",
+        port: 3306,
+        username: "MegumiKato",
+        password: "20040923",
+        database: "testz",
+        tlsConfiguration: tls
     ), as: .mysql)
 
-    app.migrations.add(CreateTodo())
+    app.migrations.add(CreateUser())
+    app.migrations.add(CreateTransaction())
+    app.migrations.add(CreateBill())
+    try await app.autoMigrate()
     // register routes
     try routes(app)
 }
