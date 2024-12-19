@@ -29,6 +29,7 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CreateUser())
     app.migrations.add(CreateTransaction())
     app.migrations.add(CreateBill())
+    app.migrations.add(CreateBudget())
     try await app.autoMigrate()
     // register routes
     try routes(app)
