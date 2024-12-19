@@ -42,12 +42,12 @@ struct UserController: RouteCollection {
             req.logger.info("UserID: \(userUUID)")
         }
 
-        return .accepted
+        return .ok
     }
     
     // 用户登录
     @Sendable
-    func login(req: Request) async throws -> HTTPStatus {
+    func login(req: Request) async throws -> UserDTO {
         let loginDTO = try req.content.decode(LoginDTO.self)
         
         guard let user = try await User.query(on: req.db)
@@ -61,7 +61,7 @@ struct UserController: RouteCollection {
             throw Abort(.unauthorized, reason: "手机号或密码错误")
         }
         
-        return .accepted
+        return user.toDTO()
     }
     
     // 获取用户资料
@@ -119,7 +119,7 @@ struct UserController: RouteCollection {
             throw Abort(.notFound, reason: "用户不存在")
         }
         try await user.delete(on: req.db)
-        return .noContent
+        return .ok
     }
     
     // 上传头像
@@ -147,7 +147,7 @@ struct UserController: RouteCollection {
         }
         
         // 读取文件数据
-        guard let fileData = try? file.data.readData(length: file.data.readableBytes) else {
+        guard let fileData = file.data.readData(length: file.data.readableBytes) else {
             throw Abort(.internalServerError, reason: "读取文件失败")
         }
         

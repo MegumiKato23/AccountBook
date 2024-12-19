@@ -15,8 +15,21 @@ struct BillController: RouteCollection {
         
         // 用户账单路由
         bills.group("user", ":userID") { userBills in
-            userBills.post(use: createBill)
             userBills.get(use: getUserBills)
+        }
+
+        // 用户交易账单路由
+        bills.group("user", ":userID", "transaction", ":transactionID") { userTransactionBills in
+            userTransactionBills.post(use: createBill)
+            userTransactionBills.get(use: getUserTransactionBills)
+        }
+
+        bills.group("user", ":userID", "income") { userIncomeBills in
+            userIncomeBills.get(use: getUserIncomeBills)
+        }
+
+        bills.group("user", ":userID", "expense") { userExpenseBills in
+            userExpenseBills.get(use: getUserExpenseBills)
         }
     }
     
@@ -36,9 +49,15 @@ struct BillController: RouteCollection {
         guard let userID = req.parameters.get("userID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "无效的用户ID")
         }
+        
+        guard let transactionID = req.parameters.get("transactionID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "无效的类型ID")
+        }
+
         let billDTO = try req.content.decode(BillDTO.self)
         let bill = billDTO.toModel()
         bill.$user.id = userID
+        bill.$transaction.id = transactionID
         try await bill.save(on: req.db)
         return bill.toDTO()
     }
@@ -100,4 +119,55 @@ struct BillController: RouteCollection {
         
         return bills.map { $0.toDTO() }
     }
-} 
+
+    // 获取用户的交易账单
+    @Sendable
+    func getUserTransactionBills(req: Request) async throws -> [BillDTO] {
+        guard let userID = req.parameters.get("userID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "无效的用户ID")
+        }
+
+        guard let transactionID = req.parameters.get("transactionID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "无效的交易ID")
+        }
+
+        let bills = try await Bill.query(on: req.db)
+            .with(\.$transaction)
+            .with(\.$user)
+            .filter(\.$user.$id == userID)
+            .filter(\.$transaction.$id == transactionID)
+            .all()
+        return bills.map { $0.toDTO() }
+    }
+
+    // 获取用户的收入账单
+    @Sendable
+    func getUserIncomeBills(req: Request) async throws -> [BillDTO] {
+        guard let userID = req.parameters.get("userID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "无效的用户ID")
+        }
+        let bills = try await Bill.query(on: req.db)
+            .with(\.$transaction)
+            .join(Transaction.self, on: \Bill.$transaction.$id == \Transaction.$id)
+            .filter(\Bill.$user.$id == userID)
+            .filter(Transaction.self, \.$type == .income)
+            .all()
+        return bills.map { $0.toDTO() }
+    } 
+
+    // 获取用户的支出账单
+    @Sendable
+    func getUserExpenseBills(req: Request) async throws -> [BillDTO] {
+        guard let userID = req.parameters.get("userID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "无效的用户ID")
+        }
+
+        let bills = try await Bill.query(on: req.db)
+            .with(\.$transaction)
+            .join(Transaction.self, on: \Bill.$transaction.$id == \Transaction.$id)
+            .filter(\.$user.$id == userID)
+            .filter(Transaction.self, \.$type == .expense)
+            .all()
+        return bills.map { $0.toDTO() }
+    } 
+}

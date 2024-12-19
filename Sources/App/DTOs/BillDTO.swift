@@ -13,10 +13,10 @@ struct BillDTO: Content {
         let model = Bill()
         model.id = self.id
         if let transaction = self.transaction {
-            model.transaction = transaction
+            model.$transaction.id = transaction.id!
         }
         if let user = self.user {
-            model.user = user
+            model.$user.id = user.id!
         }
         if let amount = self.amount {
             model.amount = amount

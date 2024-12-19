@@ -37,8 +37,8 @@ final class Bill: Model, @unchecked Sendable {
     func toDTO() -> BillDTO {
         .init(
             id: self.id,
-            transaction: self.transaction,
-            user: self.user,
+            transaction: self.$transaction.value,
+            user: self.$user.value,
             amount: self.amount,
             date: self.date,
             description: self.description
