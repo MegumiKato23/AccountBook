@@ -69,7 +69,7 @@ struct BudgetController: RouteCollection {
 
     // 创建用户预算
     @Sendable
-    func createBudget(req: Request) async throws -> BudgetDTO {
+    func createBudget(req: Request) async throws -> HTTPStatus {
         guard let userID = req.parameters.get("userID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "无效的用户ID")
         } 
@@ -78,7 +78,7 @@ struct BudgetController: RouteCollection {
         let budget = budgetDTO.toModel()
         budget.$user.id = userID
         try await budget.save(on: req.db)
-        return budget.toDTO()
+        return .accepted
     }
 
     // 删除用户预算

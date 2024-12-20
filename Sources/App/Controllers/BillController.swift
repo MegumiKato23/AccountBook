@@ -45,7 +45,7 @@ struct BillController: RouteCollection {
     
     // 创建新账单
     @Sendable
-    func createBill(req: Request) async throws -> BillDTO {
+    func createBill(req: Request) async throws -> HTTPStatus {
         guard let userID = req.parameters.get("userID", as: UUID.self) else {
             throw Abort(.badRequest, reason: "无效的用户ID")
         }
@@ -59,7 +59,7 @@ struct BillController: RouteCollection {
         bill.$user.id = userID
         bill.$transaction.id = transactionID
         try await bill.save(on: req.db)
-        return bill.toDTO()
+        return .accepted
     }
     
     // 获取单个账单

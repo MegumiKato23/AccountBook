@@ -42,7 +42,7 @@ struct UserController: RouteCollection {
             req.logger.info("UserID: \(userUUID)")
         }
 
-        return .ok
+        return .accepted
     }
     
     // 用户登录
@@ -119,7 +119,7 @@ struct UserController: RouteCollection {
             throw Abort(.notFound, reason: "用户不存在")
         }
         try await user.delete(on: req.db)
-        return .ok
+        return .noContent
     }
     
     // 上传头像
