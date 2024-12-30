@@ -8,7 +8,7 @@ struct CreateBill: AsyncMigration {
             .field("user_id", .uuid, .required, .references("users", "id", onDelete: .cascade))
             .field("amount", .double, .required)
             .field("date", .date, .required)
-            .field("description", .string, .required)
+            .field("description", .string)
             .create()
     }
 

@@ -20,7 +20,7 @@ struct UserController: RouteCollection {
    
     // 用户注册
     @Sendable
-    func register(req: Request) async throws -> HTTPStatus {
+    func register(req: Request) async throws -> UserResponse {
         let user = try req.content.decode(UserDTO.self).toModel()
 
         UserDTO.validations(user: user)
@@ -37,17 +37,12 @@ struct UserController: RouteCollection {
         user.password = hashedPassword
 
         try await user.save(on: req.db)
-        
-        if let userUUID = user.id {
-            req.logger.info("UserID: \(userUUID)")
-        }
-
-        return .accepted
+        return UserResponse(id: user.id, name: nil, phoneNumber: nil, avatarURL: nil)
     }
     
     // 用户登录
     @Sendable
-    func login(req: Request) async throws -> UserDTO {
+    func login(req: Request) async throws -> UserResponse {
         let loginDTO = try req.content.decode(LoginDTO.self)
         
         guard let user = try await User.query(on: req.db)
@@ -61,7 +56,12 @@ struct UserController: RouteCollection {
             throw Abort(.unauthorized, reason: "手机号或密码错误")
         }
         
-        return user.toDTO()
+        return UserResponse(
+            id: user.id,
+            name: user.name,
+            phoneNumber: user.phoneNumber,
+            avatarURL: user.avatarURL
+        )
     }
     
     // 获取用户资料
@@ -81,7 +81,7 @@ struct UserController: RouteCollection {
 
     // 更新用户资料
     @Sendable
-    func updateProfile(req: Request) async throws -> UserDTO {
+    func updateProfile(req: Request) async throws -> UserResponse {
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound, reason: "用户不存在")
         }
@@ -109,7 +109,11 @@ struct UserController: RouteCollection {
         }
         
         try await user.save(on: req.db)
-        return user.toDTO()
+        return UserResponse(id: user.id, 
+            name: user.name,
+            phoneNumber: user.phoneNumber, 
+            avatarURL: user.avatarURL
+        )
     }
     
     // 删除账号
@@ -124,7 +128,7 @@ struct UserController: RouteCollection {
     
     // 上传头像
     @Sendable
-    func uploadAvatar(req: Request) async throws -> UserDTO {
+    func uploadAvatar(req: Request) async throws -> UserResponse {
         guard let user = try await User.find(req.parameters.get("userID"), on: req.db) else {
             throw Abort(.notFound, reason: "用户不存在")
         }
@@ -180,7 +184,11 @@ struct UserController: RouteCollection {
             user.avatarURL = "/" + avatarPath + fileName
             try await user.save(on: req.db)
             
-            return user.toDTO()
+            return UserResponse(id: user.id, 
+                name: user.name,
+                phoneNumber: user.phoneNumber, 
+                avatarURL: user.avatarURL
+            )
         } catch {
             // 清理：如果保存过程中出错，删除已上传的文件
             try? FileManager.default.removeItem(atPath: filePath)
@@ -200,3 +208,10 @@ private struct UserUpdateDTO: Content {
     let phoneNumber: String?
     let password: String?
 } 
+
+struct UserResponse: Content {
+    let id: UUID?
+    let name: String?
+    let phoneNumber: String?
+    let avatarURL: String?
+}

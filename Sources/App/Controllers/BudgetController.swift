@@ -78,7 +78,7 @@ struct BudgetController: RouteCollection {
         let budget = budgetDTO.toModel()
         budget.$user.id = userID
         try await budget.save(on: req.db)
-        return .accepted
+        return .created
     }
 
     // 删除用户预算
